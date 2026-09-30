@@ -1,0 +1,186 @@
+{
+  "info": {
+    "_postman_id": "a3f8e1d2-6b4c-4e9a-9c1a-parko00000001",
+    "name": "Parko Backend API",
+    "description": "Backend de gestión de parqueaderos universitarios (Plataformas Computacionales). Módulos: Users, Vehículos, Parqueaderos, Espacios (filtros), Reservas (transacción + filtros). Usa variables baseUrl, usuarioId, parqueaderoId, espacioId, reservaId. BaseUrl http://localhost:3000 (cambiar a http://IP_EC2:3000 en despliegue).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "usuarioId", "value": "1" },
+    { "key": "placa", "value": "ABC123" },
+    { "key": "parqueaderoId", "value": "1" },
+    { "key": "espacioId", "value": "1" },
+    { "key": "reservaId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "description": "CRUD de usuarios con soft delete (activo). id autoincremental, email único, rol admin/operador/conductor.",
+      "item": [
+        {
+          "name": "Crear usuario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Carlos Tello\",\n  \"email\": \"carlos@ejemplo.com\",\n  \"telefono\": \"+573101234567\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        { "name": "Listar usuarios", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/users" } },
+        { "name": "Consultar usuario", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/users/{{usuarioId}}" } },
+        {
+          "name": "Actualizar usuario",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"telefono\": \"+573009999999\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/users/{{usuarioId}}"
+          }
+        },
+        { "name": "Desactivar usuario (soft delete)", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/users/{{usuarioId}}" } }
+      ]
+    },
+    {
+      "name": "Vehículos",
+      "description": "CRUD con PK natural (placa, se normaliza a mayúsculas). usuarioId debe existir.",
+      "item": [
+        {
+          "name": "Crear vehículo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"placa\": \"abc123\",\n  \"marca\": \"Mazda\",\n  \"modelo\": \"3\",\n  \"tipo\": \"carro\",\n  \"usuarioId\": {{usuarioId}}\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/vehiculos"
+          }
+        },
+        { "name": "Listar vehículos", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/vehiculos" } },
+        { "name": "Consultar vehículo", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/vehiculos/{{placa}}" } },
+        {
+          "name": "Actualizar vehículo",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"modelo\": \"3 Touring\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/vehiculos/{{placa}}"
+          }
+        },
+        { "name": "Desactivar vehículo (soft delete)", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/vehiculos/{{placa}}" } }
+      ]
+    },
+    {
+      "name": "Parqueaderos",
+      "description": "CRUD con soft delete. capacidadTotal informativo (no se descuenta automático, eso se ve en Espacios).",
+      "item": [
+        {
+          "name": "Crear parqueadero",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Sede Meléndez\",\n  \"direccion\": \"Calle 18 # 118-250\",\n  \"capacidadTotal\": 200\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/parqueaderos"
+          }
+        },
+        { "name": "Listar parqueaderos", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/parqueaderos" } },
+        { "name": "Consultar parqueadero", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/parqueaderos/{{parqueaderoId}}" } },
+        {
+          "name": "Actualizar parqueadero",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"capacidadTotal\": 220\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/parqueaderos/{{parqueaderoId}}"
+          }
+        },
+        { "name": "Desactivar parqueadero (soft delete)", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/parqueaderos/{{parqueaderoId}}" } }
+      ]
+    },
+    {
+      "name": "Espacios",
+      "description": "Filtros ?parqueaderoId=&estado= vía Repository+FindOptionsWhere. estado 'reservado' solo lo asigna ReservasService — PUT/DELETE lo rechazan mientras esté reservado.",
+      "item": [
+        {
+          "name": "Crear espacio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"parqueaderoId\": {{parqueaderoId}},\n  \"numero\": \"A-1\",\n  \"tipo\": \"carro\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/espacios"
+          }
+        },
+        { "name": "Listar espacios", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/espacios" } },
+        { "name": "Consultar espacio", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/espacios/{{espacioId}}" } },
+        {
+          "name": "Filtrar por parqueadero",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/espacios?parqueaderoId={{parqueaderoId}}" }
+        },
+        {
+          "name": "Filtrar por estado disponible",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/espacios?estado=disponible" }
+        },
+        {
+          "name": "Filtrar por parqueadero y estado",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/espacios?parqueaderoId={{parqueaderoId}}&estado=disponible" }
+        },
+        {
+          "name": "Actualizar espacio (tipo/estado manual)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"ocupado\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/espacios/{{espacioId}}"
+          }
+        },
+        { "name": "Poner en mantenimiento (soft delete)", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/espacios/{{espacioId}}" } }
+      ]
+    },
+    {
+      "name": "Reservas",
+      "description": "POST corre en transacción (usuario/vehículo/espacio + marca reservado). Transiciones válidas: pendiente→confirmada|cancelada, confirmada→completada|cancelada. Filtros ?estado=&usuarioId=&espacioId=.",
+      "item": [
+        {
+          "name": "Crear reserva",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"usuarioId\": {{usuarioId}},\n  \"vehiculoPlaca\": \"{{placa}}\",\n  \"espacioId\": {{espacioId}},\n  \"fechaInicio\": \"2026-09-30T08:00:00.000Z\",\n  \"fechaFin\": \"2026-09-30T12:00:00.000Z\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/reservas"
+          }
+        },
+        { "name": "Listar reservas", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/reservas" } },
+        { "name": "Consultar reserva", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/reservas/{{reservaId}}" } },
+        {
+          "name": "Filtrar por estado",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/reservas?estado=pendiente" }
+        },
+        {
+          "name": "Filtrar por usuario",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/reservas?usuarioId={{usuarioId}}" }
+        },
+        {
+          "name": "Filtrar por estado y usuario",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/reservas?estado=pendiente&usuarioId={{usuarioId}}" }
+        },
+        {
+          "name": "Confirmar reserva",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"confirmada\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/reservas/{{reservaId}}"
+          }
+        },
+        {
+          "name": "Completar reserva",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"completada\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/reservas/{{reservaId}}"
+          }
+        },
+        { "name": "Cancelar reserva (libera espacio)", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/reservas/{{reservaId}}" } }
+      ]
+    }
+  ]
+}
