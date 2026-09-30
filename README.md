@@ -10,8 +10,8 @@ del repo guía del profesor: [`backend-nestjs-seed`](https://github.com/cdtello/
 
 **Colección Postman:** [`postman/parko-backend.postman_collection.json`](./postman/parko-backend.postman_collection.json).
 
-**Desplegado en AWS EC2:** `http://TU_IP_EC2:3000` (actualizar tras el despliegue — ver
-[Despliegue en AWS EC2](#despliegue-en-aws-ec2)).
+**Desplegado en AWS EC2:** <http://18.119.140.37:3000> — ver
+[Despliegue en AWS EC2](#despliegue-en-aws-ec2).
 
 ## Estado actual (2026-09-29)
 
@@ -191,19 +191,33 @@ npm run test:e2e
 
 Importar [`postman/parko-backend.postman_collection.json`](./postman/parko-backend.postman_collection.json)
 en Postman. Carpetas: **Users**, **Vehículos**, **Parqueaderos**, **Espacios** (con filtros),
-**Reservas** (con filtros y transiciones de estado). Variable `baseUrl` — cambiarla a
-`http://TU_IP_EC2:3000` para probar contra el despliegue.
+**Reservas** (con filtros y transiciones de estado). Variable `baseUrl` ya apunta a
+`http://18.119.140.37:3000` (el despliegue en EC2); cambiarla a `http://localhost:3000` para
+probar en local.
 
 ## Despliegue en AWS EC2
 
-Instancia **Amazon Linux 2023** (`t3.micro`, Free Tier), Node 22 vía NodeSource, `npm ci` +
-`npm run build`, servido con **PM2** (`pm2 start dist/main.js --name parko-backend`) para que
-siga corriendo tras un reinicio. Base de datos: **SQLite** dentro de la propia instancia
-(`DB_SYNCHRONIZE=true`, ya que no hay migraciones todavía). Security group: puerto `22` (SSH)
-solo desde la IP del equipo, puerto `3000` abierto a `0.0.0.0/0` para la demo.
+Instancia `parko-backend` (`i-05e4738122b00f623`), **Amazon Linux 2023**, `t3.micro` (Free Tier),
+región `us-east-2` (Ohio). Security group `parko-sg`: SSH (22) solo desde la IP del equipo +
+el rango de EC2 Instance Connect (`3.16.146.0/29`, para poder conectar desde la consola sin
+`.pem`); puerto `3000` abierto a `0.0.0.0/0` para la demo.
+
+**Node 22 vía `nvm`** (no `dnf`/NodeSource): así el usuario `ec2-user` no necesita permisos de
+root para instalar ni actualizar Node. El repo se bajó como tarball de GitHub
+(`.../archive/refs/heads/main.tar.gz`) en vez de `git clone`, porque `git` tampoco viene
+preinstalado en la AMI. Servido con **PM2** (`pm2 start dist/main.js --name parko-backend` +
+`pm2 save` + `pm2 startup systemd`) para que siga corriendo tras un reinicio. Base de datos:
+**SQLite** dentro de la propia instancia (`DB_SYNCHRONIZE=true`, ya que no hay migraciones
+todavía).
+
+**Gotcha real que apareció en el despliegue:** el binario precompilado de `sqlite3` (npm) exige
+una `glibc` más nueva (`2.38`) que la que trae Amazon Linux 2023 — el backend arrancaba con
+`DriverPackageNotInstalledError`. Se resolvió instalando `gcc-c++ make python3` y recompilando
+con `npm rebuild sqlite3 --build-from-source`. Si se vuelve a desplegar desde cero, ese paso hay
+que repetirlo (no lo resuelve un `npm ci` normal).
 
 ```bash
-curl http://TU_IP_EC2:3000/parqueaderos
+curl http://18.119.140.37:3000/parqueaderos
 ```
 
 **Nota de seguridad:** el puerto 3000 queda expuesto al mundo y la API no tiene autenticación —
