@@ -76,6 +76,29 @@ Nota de convención: **los nombres de campo se mantienen en español** (`nombre`
 `activo`) a diferencia del repo guía (que usa `name`, `phone`, `isActive`) — fue una decisión
 explícita del equipo, no un descuido.
 
+## Cambio de enfoque (2026-11-07): cupos por sector
+
+Al contrastar el diseño con cómo funcionan de verdad los parqueaderos de la U (entradas con tiquete
+y máquinas de pago; nadie reserva con un día de anticipación), el dominio se amplió con un recurso
+nuevo, **`sectores`**: cada parqueadero se divide en lados/zonas y se controla por **cupos**
+(`capacidad` y `ocupados`) y estado de **fila** (`sin_fila` / `corta` / `larga`), en vez de plaza por
+plaza. El cambio es **aditivo**: `espacios` y `reservas` siguen funcionando igual (mismos endpoints,
+mismos tests); el frontend nuevo muestra cupos en vivo y ya no expone reservas.
+
+```
+POST   /sectores                    { parqueaderoId, nombre, capacidad, capacidadEstimada? }
+GET    /sectores?parqueaderoId=
+GET    /sectores/:id
+PUT    /sectores/:id                { nombre?, capacidad?, ocupados?, fila?, capacidadEstimada? }
+PATCH  /sectores/:id/ocupacion      { delta }   (+1 entra un vehículo, -1 sale uno)
+DELETE /sectores/:id                (baja lógica)
+```
+
+`PATCH .../ocupacion` es **atómico**: la condición `0 <= ocupados + delta <= capacidad` va dentro del
+mismo `UPDATE`, así que dos porteros marcando a la vez no pueden pasarse de la capacidad (hay un test
+de concurrencia). `capacidadEstimada` es `true` mientras la capacidad sea una aproximación y no un dato
+oficial. 10 tests nuevos (44 en total).
+
 ## Dominio y reglas de negocio
 
 | Recurso | Tabla / PK | Reglas clave |

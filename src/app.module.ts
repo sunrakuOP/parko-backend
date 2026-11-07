@@ -9,6 +9,7 @@ import { VehiculosModule } from './vehiculos/vehiculos.module';
 import { ParqueaderosModule } from './parqueaderos/parqueaderos.module';
 import { EspaciosModule } from './espacios/espacios.module';
 import { ReservasModule } from './reservas/reservas.module';
+import { SectoresModule } from './sectores/sectores.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { ReservasModule } from './reservas/reservas.module';
     ParqueaderosModule,
     EspaciosModule,
     ReservasModule,
+    SectoresModule,
   ],
   controllers: [AppController],
   providers: [AppService],
